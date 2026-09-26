@@ -1,0 +1,129 @@
+##############################
+## General / System
+##############################
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.env
+.env.local
+.env.*.local
+
+##############################
+## Build Tools & Base Files
+##############################
+HELP.md
+HELP.md.bak
+
+##############################
+## Quarkus & GraalVM / Mandrel
+##############################
+# Cache del CLI y tooling de Quarkus
+.quarkus/
+
+# Artefactos de compilación nativa (GraalVM / Mandrel)
+*.native-image/
+*-runner
+*.runner
+*.so
+*.dll
+*.dylib
+
+# Reportes de pruebas y cobertura (JaCoCo)
+.mvn/wrapper/maven-wrapper.jar
+jacoco.exec
+site/jacoco/
+
+##############################
+## Java Compiled & Logs
+##############################
+.mtj.tmp/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+*.log
+
+##############################
+## Maven
+##############################
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+pom.xml.bak
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.flattened-pom.xml
+.mvn/timing.properties
+
+##############################
+## Gradle
+##############################
+bin/
+build/
+.gradle/
+.gradletasknamecache
+gradle-app.setting
+!gradle-wrapper.jar
+
+##############################
+## IntelliJ IDEA
+##############################
+.idea/
+.idea_modules/
+out/
+*.iml
+*.ipr
+*.iws
+
+##############################
+## Eclipse
+##############################
+.settings/
+.metadata/
+.classpath
+.project
+.loadpath
+.factorypath
+bin/
+tmp/
+
+##############################
+## STS (Spring Tool Suite)
+##############################
+.apt_generated
+.springBeans
+.sts4-cache/
+
+##############################
+## NetBeans
+##############################
+nbproject/private/
+nbproject/project.fragment
+build/
+nbbuild/
+dist/
+nbdist/
+nbactions.xml
+nb-configuration.xml
+/.nb-gradle/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+##############################
+## Visual Studio Code
+##############################
+.vscode/
+*.code-workspace
