@@ -20,8 +20,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @QuarkusTest
-@DisplayName("CustomerController - Pruebas de integración")
-class CustomerControllerTest {
+@DisplayName("CustomerResource - Pruebas de integración")
+class CustomerResourceTest {
 
     @InjectMock
     private CustomerService customerService;
