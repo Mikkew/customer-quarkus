@@ -1,8 +1,8 @@
 package org.digitalthinking.services;
 
-import jakarta.ws.rs.WebApplicationException;
 import org.digitalthinking.entities.Customer;
 import org.digitalthinking.entities.Product;
+import org.digitalthinking.exceptions.NotFoundException;
 import org.digitalthinking.repositories.CustomerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -81,9 +81,9 @@ class CustomerServiceTest {
     void testGetById_NoExiste() {
         when(customerRepository.findByIdOptional(99L)).thenReturn(Optional.empty());
 
-        WebApplicationException ex = assertThrows(WebApplicationException.class, () -> customerService.getById(99L));
+        NotFoundException ex = assertThrows(NotFoundException.class, () -> customerService.getById(99L));
 
-        assertEquals(404, ex.getResponse().getStatus());
+        assertTrue(ex.getMessage().contains("99"));
     }
 
     @Test
@@ -93,6 +93,16 @@ class CustomerServiceTest {
 
         assertSame(base, res);
         assertSame(base, base.getProducts().get(0).getCustomer());
+        verify(customerRepository).persist(base);
+    }
+
+    @Test
+    @DisplayName("add - Ignora ids enviados por el cliente")
+    void testAdd_IgnoraIds() {
+        Customer res = customerService.add(base);
+
+        assertNull(res.getId());
+        assertNull(res.getProducts().get(0).getId());
         verify(customerRepository).persist(base);
     }
 
@@ -131,10 +141,9 @@ class CustomerServiceTest {
     void testUpdate_NoExiste() {
         when(customerRepository.findByIdOptional(99L)).thenReturn(Optional.empty());
 
-        WebApplicationException ex = assertThrows(WebApplicationException.class,
-                () -> customerService.update(99L, base));
+        NotFoundException ex = assertThrows(NotFoundException.class, () -> customerService.update(99L, base));
 
-        assertEquals(404, ex.getResponse().getStatus());
+        assertTrue(ex.getMessage().contains("99"));
         verify(customerRepository, never()).persist(any(Customer.class));
     }
 
@@ -151,8 +160,8 @@ class CustomerServiceTest {
     void testDelete_NoExiste() {
         when(customerRepository.deleteById(99L)).thenReturn(false);
 
-        WebApplicationException ex = assertThrows(WebApplicationException.class, () -> customerService.delete(99L));
+        NotFoundException ex = assertThrows(NotFoundException.class, () -> customerService.delete(99L));
 
-        assertEquals(404, ex.getResponse().getStatus());
+        assertTrue(ex.getMessage().contains("99"));
     }
 }

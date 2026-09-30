@@ -25,7 +25,7 @@ public class Customer {
     private String phone;
     private String address;
 
-    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch =  FetchType.EAGER)
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true, fetch =  FetchType.EAGER)
     @JsonManagedReference
     private List<Product> products;
 }

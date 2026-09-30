@@ -38,6 +38,16 @@ class CustomerResourceTest {
     }
 
     @Test
+    @DisplayName("POST con id en el body - Ignora el id y crea")
+    void testCreateWithId() {
+        given().contentType(ContentType.JSON)
+                .body("{\"id\":1,\"code\":\"C\",\"products\":[{\"id\":1,\"product\":101}]}")
+                .when().post("/customer")
+                .then().statusCode(201)
+                .body("id", notNullValue());
+    }
+
+    @Test
     @DisplayName("GET /customer - Incluye cliente creado")
     void testList() {
         create();
@@ -69,6 +79,17 @@ class CustomerResourceTest {
 
         given().when().delete("/customer/" + id).then().statusCode(204);
         given().when().get("/customer/" + id).then().statusCode(404);
+    }
+
+    @Test
+    @DisplayName("Error 404 - Retorna JSON con el mensaje")
+    void testMensajeError() {
+        given().when().get("/customer/999999")
+                .then()
+                .statusCode(404)
+                .contentType(ContentType.JSON)
+                .body("status", is(404))
+                .body("message", containsString("999999"));
     }
 
     @Test

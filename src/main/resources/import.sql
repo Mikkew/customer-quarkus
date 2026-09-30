@@ -42,3 +42,7 @@ INSERT INTO Product (id, customer, product) VALUES (7, 5, 106);
 INSERT INTO Product (id, customer, product) VALUES (8, 6, 107);
 INSERT INTO Product (id, customer, product) VALUES (9, 7, 108);
 INSERT INTO Product (id, customer, product) VALUES (10, 8, 109);
+
+-- Avanzar los IDs autogenerados para no chocar con los insertados a mano
+ALTER TABLE Customer ALTER COLUMN id RESTART WITH 11;
+ALTER TABLE Product ALTER COLUMN id RESTART WITH 11;
