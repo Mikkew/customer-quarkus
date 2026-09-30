@@ -16,78 +16,50 @@ public class CustomerService {
     @Inject
     private CustomerRepository customerRepository;
 
-    public List<Customer> listarTodos() {
+    public List<Customer> list() {
         return customerRepository.listAll();
     }
 
     @Transactional
-    public Customer obtenerPorId(Long id) {
+    public Customer getById(Long id) {
         Customer c = customerRepository.findByIdOptional(id)
             .orElseThrow(() -> new WebApplicationException("Cliente no encontrado con ID: " + id, Response.Status.NOT_FOUND));
-    c.getProductIds().size(); // inicializa el lazy
-    return c;
+        if (c.getProducts() != null) {
+            c.getProducts().size();
+        }
+        return c;
     }
 
     @Transactional
-    public Customer crearCliente(Customer customer) {
-        if (customer.getId() != null) {
-            throw new WebApplicationException("El ID no debe enviarse al crear un nuevo cliente", Response.Status.BAD_REQUEST);
+    public Customer add(Customer customer) {
+        if (customer.getProducts() != null) {
+            customer.getProducts().forEach(product -> product.setCustomer(customer));
         }
-
-        // Regla de negocio: Verificar email único
-        if (customer.getEmail() != null && customerRepository.findByEmail(customer.getEmail()).isPresent()) {
-            throw new WebApplicationException("Ya existe un cliente registrado con ese email", Response.Status.CONFLICT);
-        }
-
         customerRepository.persist(customer);
         return customer;
     }
 
     @Transactional
-    public Customer actualizarCliente(Long id, Customer detalles) {
-        Customer clienteExistente = obtenerPorId(id);
+    public Customer update(Long id, Customer detalles) {
+        Customer customer = getById(id);
 
-        clienteExistente.setNombre(detalles.getNombre());
-        clienteExistente.setApellido(detalles.getApellido());
-        clienteExistente.setEmail(detalles.getEmail());
-        clienteExistente.setTelefono(detalles.getTelefono());
+        customer.setCode(detalles.getCode());
+        customer.setAccountNumber(detalles.getAccountNumber());
+        customer.setNames(detalles.getNames());
+        customer.setSurname(detalles.getSurname());
+        customer.setPhone(detalles.getPhone());
+        customer.setAddress(detalles.getAddress());
+        customer.setProducts(detalles.getProducts());
+        customerRepository.persist(customer);
 
-         clienteExistente.getProductIds().size();
-
-        return clienteExistente;
+        return customer;
     }
 
     @Transactional
-    public void eliminarCliente(Long id) {
+    public void delete(Long id) {
         boolean eliminado = customerRepository.deleteById(id);
         if (!eliminado) {
             throw new WebApplicationException("Cliente no encontrado con ID: " + id, Response.Status.NOT_FOUND);
         }
-    }
-
-    public List<Long> obtenerProductIdsPorCliente(Long customerId) {
-        Customer customer = customerRepository.findByIdOptional(customerId)
-                .orElseThrow(() -> new WebApplicationException("Cliente no encontrado", Response.Status.NOT_FOUND));
-        return customer.getProductIds();
-    }
-
-    @Transactional
-    public Customer agregarProductoACliente(Long customerId, Long productId) {
-        Customer customer = customerRepository.findByIdOptional(customerId)
-                .orElseThrow(() -> new WebApplicationException("Cliente no encontrado", Response.Status.NOT_FOUND));
-
-        if (!customer.getProductIds().contains(productId)) {
-            customer.getProductIds().add(productId);
-        }
-        return customer;
-    }
-
-    @Transactional
-    public Customer removerProductoDeCliente(Long customerId, Long productId) {
-        Customer customer = customerRepository.findByIdOptional(customerId)
-                .orElseThrow(() -> new WebApplicationException("Cliente no encontrado", Response.Status.NOT_FOUND));
-
-        customer.getProductIds().remove(productId);
-        return customer;
     }
 }

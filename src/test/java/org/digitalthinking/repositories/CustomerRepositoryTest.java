@@ -4,12 +4,12 @@ import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.digitalthinking.entities.Customer;
+import org.digitalthinking.entities.Product;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -17,67 +17,61 @@ import static org.junit.jupiter.api.Assertions.*;
 class CustomerRepositoryTest {
 
     @Inject
-    private CustomerRepository customerRepository;
+    CustomerRepository customerRepository;
+
+    private Customer build(String code) {
+        return new Customer(null, code, "ACC-" + code, "Carlos", "Pérez", "123", "Calle 1", new ArrayList<>());
+    }
 
     @Test
     @TestTransaction
-    @DisplayName("findByEmail - Éxito: retorna cliente cuando el email existe")
-    void testFindByEmail_Existe() {
-        Customer c = new Customer(null, "Carlos", "Pérez", "carlos@test.com", "123", new ArrayList<>());
+    @DisplayName("persist - Asigna id y se puede recuperar")
+    void testPersist() {
+        Customer c = build("T-1");
         customerRepository.persist(c);
 
-        Optional<Customer> resultado = customerRepository.findByEmail("carlos@test.com");
-
-        assertTrue(resultado.isPresent());
-        assertEquals("Carlos", resultado.get().getNombre());
+        assertNotNull(c.getId());
+        Customer encontrado = customerRepository.findById(c.getId());
+        assertEquals("Carlos", encontrado.getNames());
     }
 
     @Test
     @TestTransaction
-    @DisplayName("findByEmail - Éxito: retorna vacío cuando el email no existe")
-    void testFindByEmail_NoExiste() {
-        Optional<Customer> resultado = customerRepository.findByEmail("noexiste@test.com");
+    @DisplayName("persist - Cascada guarda productos")
+    void testPersist_ConProductos() {
+        Customer c = build("T-2");
+        Product p = new Product();
+        p.setProduct(101L);
+        p.setCustomer(c);
+        c.getProducts().add(p);
 
-        assertTrue(resultado.isEmpty());
+        customerRepository.persist(c);
+        customerRepository.flush();
+
+        assertNotNull(p.getId());
     }
 
     @Test
     @TestTransaction
-    @DisplayName("findByNombre - Éxito: retorna coincidencias parciales")
-    void testFindByNombre_ConCoincidencias() {
-        Customer c1 = new Customer(null, "Carlos", "Pérez", "carlos@test.com", "123", new ArrayList<>());
-        Customer c2 = new Customer(null, "Carla", "Gómez", "carla@test.com", "456", new ArrayList<>());
-        Customer c3 = new Customer(null, "Ana", "López", "ana@test.com", "789", new ArrayList<>());
-        customerRepository.persist(c1);
-        customerRepository.persist(c2);
-        customerRepository.persist(c3);
+    @DisplayName("listAll - Incluye clientes persistidos")
+    void testListAll() {
+        int antes = customerRepository.listAll().size();
+        customerRepository.persist(build("T-3"));
+        customerRepository.persist(build("T-4"));
 
-        List<Customer> resultado = customerRepository.findByNombre("Carl");
+        List<Customer> todos = customerRepository.listAll();
 
-        assertEquals(2, resultado.size());
+        assertEquals(antes + 2, todos.size());
     }
 
     @Test
     @TestTransaction
-    @DisplayName("findByNombre - Éxito: case-insensitive")
-    void testFindByNombre_CaseInsensitive() {
-        Customer c = new Customer(null, "Carlos", "Pérez", "carlos@test.com", "123", new ArrayList<>());
+    @DisplayName("deleteById - Elimina cliente existente y retorna false si no existe")
+    void testDeleteById() {
+        Customer c = build("T-5");
         customerRepository.persist(c);
 
-        List<Customer> resultado = customerRepository.findByNombre("CARLOS");
-
-        assertEquals(1, resultado.size());
-    }
-
-    @Test
-    @TestTransaction
-    @DisplayName("findByNombre - Éxito: retorna vacío cuando no hay coincidencias")
-    void testFindByNombre_SinCoincidencias() {
-        Customer c = new Customer(null, "Carlos", "Pérez", "carlos@test.com", "123", new ArrayList<>());
-        customerRepository.persist(c);
-
-        List<Customer> resultado = customerRepository.findByNombre("Zzz");
-
-        assertTrue(resultado.isEmpty());
+        assertTrue(customerRepository.deleteById(c.getId()));
+        assertFalse(customerRepository.deleteById(-1L));
     }
 }

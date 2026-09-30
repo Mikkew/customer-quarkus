@@ -1,11 +1,11 @@
 package org.digitalthinking.entities;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -16,13 +16,16 @@ public class Customer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    public Long id;
-    public String nombre;
-    public String apellido;
-    public String email;
-    public String telefono;
+    private Long id;
 
-    // Colección simple de IDs de productos asociados
-    @ElementCollection
-    private List<Long> productIds = new ArrayList<>();
+    private String code;
+    private String accountNumber;
+    private String names;
+    private String surname;
+    private String phone;
+    private String address;
+
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch =  FetchType.EAGER)
+    @JsonManagedReference
+    private List<Product> products;
 }

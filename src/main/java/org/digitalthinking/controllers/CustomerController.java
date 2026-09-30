@@ -14,56 +14,41 @@ import java.util.List;
 @Consumes(MediaType.APPLICATION_JSON)
 public class CustomerController {
 
+    private final CustomerService customerService;
+
     @Inject
-    private CustomerService customerService;
+    public CustomerController(CustomerService customerService) {
+        this.customerService = customerService;
+    }
 
     @GET
-    public List<Customer> listarTodos() {
-        return customerService.listarTodos();
+    public List<Customer> list() {
+        return customerService.list();
     }
 
     @GET
     @Path("/{id}")
-    public Customer obtenerPorId(@PathParam("id") Long id) {
-        return customerService.obtenerPorId(id);
+    public Customer getById(@PathParam("id") Long id) {
+        return customerService.getById(id);
     }
 
     @POST
-    public Response crear(Customer customer) {
-        Customer nuevo = customerService.crearCliente(customer);
+    public Response add(Customer customer) {
+        Customer nuevo = customerService.add(customer);
         return Response.status(Response.Status.CREATED).entity(nuevo).build();
     }
 
     @PUT
     @Path("/{id}")
-    public Customer actualizar(@PathParam("id") Long id, Customer detalles) {
-        return customerService.actualizarCliente(id, detalles);
+    public Customer update(@PathParam("id") Long id, Customer detalles) {
+        return customerService.update(id, detalles);
     }
 
     @DELETE
     @Path("/{id}")
-    public Response eliminar(@PathParam("id") Long id) {
-        customerService.eliminarCliente(id);
+    public Response delete(@PathParam("id") Long id) {
+        customerService.delete(id);
         return Response.noContent().build();
     }
 
-    @GET
-    @Path("/{id}/products")
-    public List<Long> obtenerProductosDeCliente(@PathParam("id") Long customerId) {
-        return customerService.obtenerProductIdsPorCliente(customerId);
-    }
-
-    @POST
-    @Path("/{id}/products/{productId}")
-    public Response agregarProducto(@PathParam("id") Long customerId, @PathParam("productId") Long productId) {
-        Customer clienteActualizado = customerService.agregarProductoACliente(customerId, productId);
-        return Response.ok(clienteActualizado).build();
-    }
-
-    @DELETE
-    @Path("/{id}/products/{productId}")
-    public Response removerProducto(@PathParam("id") Long customerId, @PathParam("productId") Long productId) {
-        Customer clienteActualizado = customerService.removerProductoDeCliente(customerId, productId);
-        return Response.ok(clienteActualizado).build();
-    }
 }

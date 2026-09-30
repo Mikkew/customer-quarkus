@@ -10,155 +10,111 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CustomerTest {
 
-    // ==========================================
-    // 1. Constructor sin argumentos
-    // ==========================================
+    private Customer build(Long id, List<Product> products) {
+        return new Customer(id, "CUST-001", "ACC-1001", "Juan", "Pérez", "555-0101", "Av. Reforma 123", products);
+    }
 
     @Test
-    @DisplayName("Constructor vacío - Crea instancia con productIds no nulo y vacío")
+    @DisplayName("Constructor vacío - Todos los campos son null")
     void testConstructorVacio() {
         Customer c = new Customer();
 
-        assertNotNull(c);
         assertNull(c.getId());
-        assertNull(c.getNombre());
-        assertNull(c.getApellido());
-        assertNull(c.getEmail());
-        assertNull(c.getTelefono());
-        assertNotNull(c.getProductIds(), "productIds debe inicializarse por defecto");
-        assertTrue(c.getProductIds().isEmpty());
+        assertNull(c.getCode());
+        assertNull(c.getAccountNumber());
+        assertNull(c.getNames());
+        assertNull(c.getSurname());
+        assertNull(c.getPhone());
+        assertNull(c.getAddress());
+        assertNull(c.getProducts());
     }
-
-    // ==========================================
-    // 2. Constructor con todos los argumentos
-    // ==========================================
 
     @Test
     @DisplayName("Constructor completo - Asigna todos los campos")
     void testConstructorCompleto() {
-        List<Long> productos = new ArrayList<>(List.of(10L, 20L));
-
-        Customer c = new Customer(1L, "Carlos", "Pérez", "carlos@test.com", "123", productos);
+        Product p = new Product(1L, null, 101L, "Producto", null, null);
+        Customer c = build(1L, new ArrayList<>(List.of(p)));
 
         assertEquals(1L, c.getId());
-        assertEquals("Carlos", c.getNombre());
-        assertEquals("Pérez", c.getApellido());
-        assertEquals("carlos@test.com", c.getEmail());
-        assertEquals("123", c.getTelefono());
-        assertEquals(2, c.getProductIds().size());
-        assertTrue(c.getProductIds().containsAll(List.of(10L, 20L)));
+        assertEquals("CUST-001", c.getCode());
+        assertEquals("ACC-1001", c.getAccountNumber());
+        assertEquals("Juan", c.getNames());
+        assertEquals("Pérez", c.getSurname());
+        assertEquals("555-0101", c.getPhone());
+        assertEquals("Av. Reforma 123", c.getAddress());
+        assertEquals(1, c.getProducts().size());
     }
 
     @Test
-    @DisplayName("Constructor completo - Acepta productIds null")
-    void testConstructorCompleto_ProductIdsNull() {
-        Customer c = new Customer(1L, "Carlos", "Pérez", "carlos@test.com", "123", null);
-
-        assertNotNull(c);
-        assertNull(c.getProductIds());
-    }
-
-    // ==========================================
-    // 3. Getters y Setters
-    // ==========================================
-
-    @Test
-    @DisplayName("Setters - Modifican correctamente todos los campos")
+    @DisplayName("Setters - Modifican todos los campos")
     void testSetters() {
         Customer c = new Customer();
 
         c.setId(99L);
-        c.setNombre("Ana");
-        c.setApellido("López");
-        c.setEmail("ana@test.com");
-        c.setTelefono("456");
-        c.setProductIds(new ArrayList<>(List.of(1L, 2L, 3L)));
+        c.setCode("C");
+        c.setAccountNumber("A");
+        c.setNames("Ana");
+        c.setSurname("López");
+        c.setPhone("456");
+        c.setAddress("Calle");
+        c.setProducts(new ArrayList<>());
 
         assertEquals(99L, c.getId());
-        assertEquals("Ana", c.getNombre());
-        assertEquals("López", c.getApellido());
-        assertEquals("ana@test.com", c.getEmail());
-        assertEquals("456", c.getTelefono());
-        assertEquals(3, c.getProductIds().size());
-    }
-
-    // ==========================================
-    // 4. Comportamiento de productIds (clave para el servicio)
-    // ==========================================
-
-    @Test
-    @DisplayName("productIds - Es mutable (permite add/remove del servicio)")
-    void testProductIds_Mutable() {
-        Customer c = new Customer();
-
-        c.getProductIds().add(100L);
-        c.getProductIds().add(200L);
-
-        assertEquals(2, c.getProductIds().size());
-        assertTrue(c.getProductIds().contains(100L));
-
-        c.getProductIds().remove(100L);
-
-        assertEquals(1, c.getProductIds().size());
-        assertFalse(c.getProductIds().contains(100L));
+        assertEquals("C", c.getCode());
+        assertEquals("A", c.getAccountNumber());
+        assertEquals("Ana", c.getNames());
+        assertEquals("López", c.getSurname());
+        assertEquals("456", c.getPhone());
+        assertEquals("Calle", c.getAddress());
+        assertTrue(c.getProducts().isEmpty());
     }
 
     @Test
-    @DisplayName("productIds - No es nulo al crear con constructor vacío")
-    void testProductIds_NoEsNulo() {
-        Customer c = new Customer();
-
-        assertDoesNotThrow(() -> c.getProductIds().add(1L));
-    }
-
-    // ==========================================
-    // 5. equals / hashCode (Lombok @Data)
-    // ==========================================
-
-    @Test
-    @DisplayName("equals/hashCode - Dos clientes con mismos datos son iguales")
+    @DisplayName("equals/hashCode - Mismos datos son iguales")
     void testEqualsHashCode_Iguales() {
-        Customer c1 = new Customer(1L, "Carlos", "Pérez", "c@t.com", "123", new ArrayList<>(List.of(10L)));
-        Customer c2 = new Customer(1L, "Carlos", "Pérez", "c@t.com", "123", new ArrayList<>(List.of(10L)));
+        Customer c1 = build(1L, new ArrayList<>());
+        Customer c2 = build(1L, new ArrayList<>());
 
         assertEquals(c1, c2);
         assertEquals(c1.hashCode(), c2.hashCode());
     }
 
     @Test
-    @DisplayName("equals/hashCode - Dos clientes con distinto id no son iguales")
-    void testEqualsHashCode_Distintos() {
-        Customer c1 = new Customer(1L, "Carlos", "Pérez", "c@t.com", "123", new ArrayList<>());
-        Customer c2 = new Customer(2L, "Carlos", "Pérez", "c@t.com", "123", new ArrayList<>());
-
-        assertNotEquals(c1, c2);
+    @DisplayName("equals - Distinto id no son iguales")
+    void testEquals_Distintos() {
+        assertNotEquals(build(1L, new ArrayList<>()), build(2L, new ArrayList<>()));
     }
 
     @Test
-    @DisplayName("equals - Comparación consigo mismo y con null")
+    @DisplayName("equals - Consigo mismo, null y otro tipo")
     void testEquals_ReflexivoYNull() {
-        Customer c = new Customer(1L, "Carlos", "Pérez", "c@t.com", "123", new ArrayList<>());
+        Customer c = build(1L, new ArrayList<>());
 
         assertEquals(c, c);
-        assertNotEquals(c, null);
-        assertNotEquals(c, "otro tipo");
+        assertNotEquals(null, c);
+        assertNotEquals("otro tipo", c);
     }
 
-    // ==========================================
-    // 6. toString (Lombok @Data)
-    // ==========================================
+    @Test
+    @DisplayName("Relación bidireccional - hashCode y toString no recursan")
+    void testRelacionBidireccional() {
+        Customer c = build(1L, new ArrayList<>());
+        Product p = new Product(1L, c, 101L, null, null, null);
+        c.getProducts().add(p);
+
+        assertDoesNotThrow(c::hashCode);
+        assertDoesNotThrow(c::toString);
+        assertDoesNotThrow(p::hashCode);
+        assertDoesNotThrow(p::toString);
+    }
 
     @Test
-    @DisplayName("toString - Contiene los valores de los campos")
+    @DisplayName("toString - Contiene valores de los campos")
     void testToString() {
-        Customer c = new Customer(1L, "Carlos", "Pérez", "c@t.com", "123", new ArrayList<>(List.of(10L)));
+        String str = build(1L, new ArrayList<>()).toString();
 
-        String str = c.toString();
-
-        assertNotNull(str);
-        assertTrue(str.contains("Carlos"));
+        assertTrue(str.contains("Juan"));
         assertTrue(str.contains("Pérez"));
-        assertTrue(str.contains("c@t.com"));
-        assertTrue(str.contains("1"));
+        assertTrue(str.contains("CUST-001"));
     }
 }
