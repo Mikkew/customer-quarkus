@@ -10,11 +10,11 @@ import java.util.Optional;
 @ApplicationScoped
 public class CustomerRepository implements PanacheRepository<Customer> {
 
-    public Optional<Customer> findByEmail(String email) {
-        return find("email", email).firstResultOptional();
+    public Optional<Customer> findByCode(String code) {
+        return find("code", code).firstResultOptional();
     }
 
-    public List<Customer> findByNombre(String patron) {
-        return list("LOWER(nombre) LIKE LOWER(?1)", "%" + patron + "%");
+    public List<Customer> findByNames(String patron) {
+        return list("LOWER(names) LIKE LOWER(?1)", "%" + patron + "%");
     }
 }

@@ -2,7 +2,9 @@ package org.digitalthinking.services;
 
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import org.digitalthinking.entities.Customer;
+import org.digitalthinking.entities.Product;
 import org.digitalthinking.repositories.CustomerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,11 +32,24 @@ class CustomerServiceTest {
     @InjectMocks
     private CustomerService customerService;
 
+    @Mock
+    private PanacheQuery<Customer> query;
+
     private Customer clienteBase;
 
     @BeforeEach
     void setUp() {
-        clienteBase = new Customer(1L, "Carlos", "Pérez", "carlos@test.com", "123", new ArrayList<>(List.of(10L)));
+        clienteBase = crearCliente(1L, "C001", "Carlos", "Pérez", "123", new ArrayList<>(List.of(producto(10L))));
+    }
+
+    private Customer crearCliente(Long id, String code, String names, String surname, String phone, List<Product> products) {
+        return new Customer(id, code, "ACC-" + code, names, surname, phone, "Calle 1", products);
+    }
+
+    private Product producto(Long productId) {
+        Product p = new Product();
+        p.setProduct(productId);
+        return p;
     }
 
     // ==========================================
@@ -44,14 +59,14 @@ class CustomerServiceTest {
     @Test
     @DisplayName("listarTodos - Éxito: Retorna todos los clientes")
     void testListarTodos_Exito() {
-        Customer c2 = new Customer(2L, "Ana", "López", "ana@test.com", "456", new ArrayList<>());
+        Customer c2 = crearCliente(2L, "C002", "Ana", "López", "456", new ArrayList<>());
         when(customerRepository.listAll()).thenReturn(List.of(clienteBase, c2));
 
         List<Customer> resultado = customerService.listarTodos();
 
         assertEquals(2, resultado.size());
-        assertEquals("Carlos", resultado.get(0).getNombre());
-        assertEquals("Ana", resultado.get(1).getNombre());
+        assertEquals("Carlos", resultado.get(0).getNames());
+        assertEquals("Ana", resultado.get(1).getNames());
         verify(customerRepository, times(1)).listAll();
     }
 
@@ -79,7 +94,7 @@ class CustomerServiceTest {
 
         assertNotNull(resultado);
         assertEquals(1L, resultado.getId());
-        assertEquals("Carlos", resultado.getNombre());
+        assertEquals("Carlos", resultado.getNames());
         verify(customerRepository, times(1)).findByIdOptional(1L);
     }
 
@@ -103,35 +118,38 @@ class CustomerServiceTest {
     @Test
     @DisplayName("crearCliente - Éxito: Persiste cliente nuevo")
     void testCrearCliente_Exito() {
-        Customer input = new Customer(null, "Carlos", "Pérez", "carlos@test.com", "123", null);
-        when(customerRepository.findByEmail("carlos@test.com")).thenReturn(Optional.empty());
+        Customer input = crearCliente(null, "C001", "Carlos", "Pérez", "123", null);
+        when(customerRepository.find("code", "C001")).thenReturn(query);
+        when(query.firstResultOptional()).thenReturn(Optional.empty());
 
         Customer resultado = customerService.crearCliente(input);
 
         assertNotNull(resultado);
-        assertEquals("Carlos", resultado.getNombre());
-        verify(customerRepository, times(1)).findByEmail("carlos@test.com");
+        assertEquals("Carlos", resultado.getNames());
+        assertNotNull(resultado.getProducts());
+        verify(customerRepository, times(1)).find("code", "C001");
         verify(customerRepository, times(1)).persist(input);
     }
 
     @Test
     @DisplayName("crearCliente - Error: ID no debe ser enviado (400)")
     void testCrearCliente_IdNoNulo() {
-        Customer input = new Customer(10L, "Carlos", "Pérez", "carlos@test.com", "123", null);
+        Customer input = crearCliente(10L, "C001", "Carlos", "Pérez", "123", null);
 
         WebApplicationException ex = assertThrows(WebApplicationException.class,
                 () -> customerService.crearCliente(input));
 
         assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), ex.getResponse().getStatus());
         verify(customerRepository, never()).persist(any(Customer.class));
-        verify(customerRepository, never()).findByEmail(anyString());
+        verify(customerRepository, never()).find(anyString(), any(Object[].class));
     }
 
     @Test
-    @DisplayName("crearCliente - Error: Email duplicado (409)")
-    void testCrearCliente_EmailDuplicado() {
-        Customer input = new Customer(null, "Carlos", "Pérez", "carlos@test.com", "123", null);
-        when(customerRepository.findByEmail("carlos@test.com")).thenReturn(Optional.of(clienteBase));
+    @DisplayName("crearCliente - Error: Código duplicado (409)")
+    void testCrearCliente_CodigoDuplicado() {
+        Customer input = crearCliente(null, "C001", "Carlos", "Pérez", "123", null);
+        when(customerRepository.find("code", "C001")).thenReturn(query);
+        when(query.firstResultOptional()).thenReturn(Optional.of(clienteBase));
 
         WebApplicationException ex = assertThrows(WebApplicationException.class,
                 () -> customerService.crearCliente(input));
@@ -141,14 +159,14 @@ class CustomerServiceTest {
     }
 
     @Test
-    @DisplayName("crearCliente - Éxito: Email nulo no valida duplicado")
-    void testCrearCliente_EmailNulo() {
-        Customer input = new Customer(null, "Carlos", "Pérez", null, "123", null);
+    @DisplayName("crearCliente - Éxito: Código nulo no valida duplicado")
+    void testCrearCliente_CodigoNulo() {
+        Customer input = crearCliente(null, null, "Carlos", "Pérez", "123", null);
 
         Customer resultado = customerService.crearCliente(input);
 
         assertNotNull(resultado);
-        verify(customerRepository, never()).findByEmail(anyString());
+        verify(customerRepository, never()).find(anyString(), any(Object[].class));
         verify(customerRepository, times(1)).persist(input);
     }
 
@@ -159,21 +177,21 @@ class CustomerServiceTest {
     @Test
     @DisplayName("actualizarCliente - Éxito: Actualiza datos del cliente")
     void testActualizarCliente_Exito() {
-        Customer detalles = new Customer(null, "Carlos", "Gómez", "carlos@test.com", "999", null);
+        Customer detalles = crearCliente(null, "C001", "Carlos", "Gómez", "999", null);
         when(customerRepository.findByIdOptional(1L)).thenReturn(Optional.of(clienteBase));
 
         Customer resultado = customerService.actualizarCliente(1L, detalles);
 
         assertNotNull(resultado);
-        assertEquals("Gómez", resultado.getApellido());
-        assertEquals("999", resultado.getTelefono());
+        assertEquals("Gómez", resultado.getSurname());
+        assertEquals("999", resultado.getPhone());
         verify(customerRepository, times(1)).findByIdOptional(1L);
     }
 
     @Test
     @DisplayName("actualizarCliente - Error: Cliente no existe (404)")
     void testActualizarCliente_NoEncontrado() {
-        Customer detalles = new Customer(null, "Carlos", "Gómez", "carlos@test.com", "999", null);
+        Customer detalles = crearCliente(null, "C001", "Carlos", "Gómez", "999", null);
         when(customerRepository.findByIdOptional(99L)).thenReturn(Optional.empty());
 
         WebApplicationException ex = assertThrows(WebApplicationException.class,
@@ -219,8 +237,7 @@ class CustomerServiceTest {
 
         List<Long> resultado = customerService.obtenerProductIdsPorCliente(1L);
 
-        assertEquals(1, resultado.size());
-        assertEquals(10L, resultado.get(0));
+        assertEquals(List.of(10L), resultado);
         verify(customerRepository, times(1)).findByIdOptional(1L);
     }
 
@@ -246,8 +263,9 @@ class CustomerServiceTest {
 
         Customer resultado = customerService.agregarProductoACliente(1L, 200L);
 
-        assertTrue(resultado.getProductIds().contains(200L));
-        assertEquals(2, resultado.getProductIds().size());
+        assertEquals(2, resultado.getProducts().size());
+        assertTrue(resultado.getProducts().stream().anyMatch(p -> Long.valueOf(200L).equals(p.getProduct())));
+        assertTrue(resultado.getProducts().stream().allMatch(p -> p.getCustomer() == null || p.getCustomer() == resultado));
     }
 
     @Test
@@ -257,8 +275,8 @@ class CustomerServiceTest {
 
         Customer resultado = customerService.agregarProductoACliente(1L, 10L);
 
-        assertEquals(1, resultado.getProductIds().size());
-        assertTrue(resultado.getProductIds().contains(10L));
+        assertEquals(1, resultado.getProducts().size());
+        assertEquals(10L, resultado.getProducts().get(0).getProduct());
     }
 
     @Test
@@ -283,8 +301,7 @@ class CustomerServiceTest {
 
         Customer resultado = customerService.removerProductoDeCliente(1L, 10L);
 
-        assertFalse(resultado.getProductIds().contains(10L));
-        assertTrue(resultado.getProductIds().isEmpty());
+        assertTrue(resultado.getProducts().isEmpty());
     }
 
     @Test
@@ -294,8 +311,8 @@ class CustomerServiceTest {
 
         Customer resultado = customerService.removerProductoDeCliente(1L, 999L);
 
-        assertEquals(1, resultado.getProductIds().size());
-        assertTrue(resultado.getProductIds().contains(10L));
+        assertEquals(1, resultado.getProducts().size());
+        assertEquals(10L, resultado.getProducts().get(0).getProduct());
     }
 
     @Test

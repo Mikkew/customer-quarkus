@@ -46,24 +46,24 @@ public class CustomerController {
         customerService.eliminarCliente(id);
         return Response.noContent().build();
     }
-
-    @GET
-    @Path("/{id}/products")
-    public List<Long> obtenerProductosDeCliente(@PathParam("id") Long customerId) {
-        return customerService.obtenerProductIdsPorCliente(customerId);
-    }
-
-    @POST
-    @Path("/{id}/products/{productId}")
-    public Response agregarProducto(@PathParam("id") Long customerId, @PathParam("productId") Long productId) {
-        Customer clienteActualizado = customerService.agregarProductoACliente(customerId, productId);
-        return Response.ok(clienteActualizado).build();
-    }
-
-    @DELETE
-    @Path("/{id}/products/{productId}")
-    public Response removerProducto(@PathParam("id") Long customerId, @PathParam("productId") Long productId) {
-        Customer clienteActualizado = customerService.removerProductoDeCliente(customerId, productId);
-        return Response.ok(clienteActualizado).build();
-    }
+//
+//    @GET
+//    @Path("/{id}/products")
+//    public List<Long> obtenerProductosDeCliente(@PathParam("id") Long customerId) {
+//        return customerService.obtenerProductIdsPorCliente(customerId);
+//    }
+//
+//    @POST
+//    @Path("/{id}/products/{productId}")
+//    public Response agregarProducto(@PathParam("id") Long customerId, @PathParam("productId") Long productId) {
+//        Customer clienteActualizado = customerService.agregarProductoACliente(customerId, productId);
+//        return Response.ok(clienteActualizado).build();
+//    }
+//
+//    @DELETE
+//    @Path("/{id}/products/{productId}")
+//    public Response removerProducto(@PathParam("id") Long customerId, @PathParam("productId") Long productId) {
+//        Customer clienteActualizado = customerService.removerProductoDeCliente(customerId, productId);
+//        return Response.ok(clienteActualizado).build();
+//    }
 }

@@ -6,6 +6,7 @@ import io.restassured.http.ContentType;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.digitalthinking.entities.Customer;
+import org.digitalthinking.entities.Product;
 import org.digitalthinking.services.CustomerService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,16 @@ class CustomerControllerTest {
     @InjectMock
     private CustomerService customerService;
 
+    private Customer cliente(Long id, String names, String surname, String phone, List<Product> products) {
+        return new Customer(id, "C" + (id == null ? 0 : id), "ACC-1", names, surname, phone, "Calle 1", products);
+    }
+
+    private Product producto(Long productId) {
+        Product p = new Product();
+        p.setProduct(productId);
+        return p;
+    }
+
     // ==========================================
     // 1. GET /customer (listarTodos)
     // ==========================================
@@ -32,8 +43,8 @@ class CustomerControllerTest {
     @Test
     @DisplayName("GET /customer - Éxito: Retorna lista con elementos")
     public void testListarTodos_Exito() {
-        Customer c1 = new Customer(1L, "Carlos", "Pérez", "carlos@test.com", "123", List.of(10L));
-        Customer c2 = new Customer(2L, "Ana", "López", "ana@test.com", "456", List.of());
+        Customer c1 = cliente(1L, "Carlos", "Pérez", "123", List.of(producto(10L)));
+        Customer c2 = cliente(2L, "Ana", "López", "456", List.of());
 
         when(customerService.listarTodos()).thenReturn(List.of(c1, c2));
 
@@ -44,8 +55,8 @@ class CustomerControllerTest {
                 .statusCode(200)
                 .contentType(ContentType.JSON)
                 .body("$", hasSize(2))
-                .body("[0].nombre", is("Carlos"))
-                .body("[1].nombre", is("Ana"));
+                .body("[0].names", is("Carlos"))
+                .body("[1].names", is("Ana"));
 
         verify(customerService, times(1)).listarTodos();
     }
@@ -72,7 +83,7 @@ class CustomerControllerTest {
     @Test
     @DisplayName("GET /customer/{id} - Éxito: Retorna cliente encontrado")
     public void testObtenerPorId_Exito() {
-        Customer c = new Customer(1L, "Carlos", "Pérez", "carlos@test.com", "123", List.of());
+        Customer c = cliente(1L, "Carlos", "Pérez", "123", List.of());
         when(customerService.obtenerPorId(1L)).thenReturn(c);
 
         given()
@@ -82,7 +93,7 @@ class CustomerControllerTest {
                 .then()
                 .statusCode(200)
                 .body("id", is(1))
-                .body("nombre", is("Carlos"));
+                .body("names", is("Carlos"));
 
         verify(customerService, times(1)).obtenerPorId(1L);
     }
@@ -110,8 +121,8 @@ class CustomerControllerTest {
     @Test
     @DisplayName("POST /customer - Éxito: Crea nuevo cliente (201 Created)")
     public void testCrear_Exito() {
-        Customer input = new Customer(null, "Carlos", "Pérez", "carlos@test.com", "123", null);
-        Customer output = new Customer(1L, "Carlos", "Pérez", "carlos@test.com", "123", List.of());
+        Customer input = cliente(null, "Carlos", "Pérez", "123", null);
+        Customer output = cliente(1L, "Carlos", "Pérez", "123", List.of());
 
         when(customerService.crearCliente(any(Customer.class))).thenReturn(output);
 
@@ -123,7 +134,7 @@ class CustomerControllerTest {
                 .then()
                 .statusCode(201)
                 .body("id", is(1))
-                .body("nombre", is("Carlos"));
+                .body("names", is("Carlos"));
 
         verify(customerService, times(1)).crearCliente(any(Customer.class));
     }
@@ -131,7 +142,7 @@ class CustomerControllerTest {
     @Test
     @DisplayName("POST /customer - Error: Solicitud inválida por el servicio (400 Bad Request)")
     public void testCrear_BadRequest() {
-        Customer input = new Customer(10L, "Carlos", "Pérez", "carlos@test.com", "123", null);
+        Customer input = cliente(10L, "Carlos", "Pérez", "123", null);
 
         when(customerService.crearCliente(any(Customer.class)))
                 .thenThrow(new WebApplicationException("El ID debe ser nulo", Response.Status.BAD_REQUEST));
@@ -154,8 +165,8 @@ class CustomerControllerTest {
     @Test
     @DisplayName("PUT /customer/{id} - Éxito: Actualiza cliente existente")
     public void testActualizar_Exito() {
-        Customer updateDetails = new Customer(null, "Carlos", "Gómez", "carlos@test.com", "999", null);
-        Customer updatedResult = new Customer(1L, "Carlos", "Gómez", "carlos@test.com", "999", List.of());
+        Customer updateDetails = cliente(null, "Carlos", "Gómez", "999", null);
+        Customer updatedResult = cliente(1L, "Carlos", "Gómez", "999", List.of());
 
         when(customerService.actualizarCliente(eq(1L), any(Customer.class))).thenReturn(updatedResult);
 
@@ -167,8 +178,8 @@ class CustomerControllerTest {
                 .put("/customer/{id}")
                 .then()
                 .statusCode(200)
-                .body("apellido", is("Gómez"))
-                .body("telefono", is("999"));
+                .body("surname", is("Gómez"))
+                .body("phone", is("999"));
 
         verify(customerService, times(1)).actualizarCliente(eq(1L), any(Customer.class));
     }
@@ -176,7 +187,7 @@ class CustomerControllerTest {
     @Test
     @DisplayName("PUT /customer/{id} - Error: Intenta actualizar cliente inexistente (404)")
     public void testActualizar_NoEncontrado() {
-        Customer updateDetails = new Customer(null, "Carlos", "Gómez", "carlos@test.com", "999", null);
+        Customer updateDetails = cliente(null, "Carlos", "Gómez", "999", null);
 
         when(customerService.actualizarCliente(eq(99L), any(Customer.class)))
                 .thenThrow(new WebApplicationException("Cliente no encontrado", Response.Status.NOT_FOUND));
@@ -273,7 +284,7 @@ class CustomerControllerTest {
     @Test
     @DisplayName("POST /customer/{id}/products/{productId} - Éxito: Asocia producto a cliente")
     public void testAgregarProducto_Exito() {
-        Customer updatedCustomer = new Customer(1L, "Carlos", "Pérez", "carlos@test.com", "123", List.of(200L));
+        Customer updatedCustomer = cliente(1L, "Carlos", "Pérez", "123", List.of(producto(200L)));
 
         when(customerService.agregarProductoACliente(1L, 200L)).thenReturn(updatedCustomer);
 
@@ -285,7 +296,7 @@ class CustomerControllerTest {
                 .post("/customer/{id}/products/{productId}")
                 .then()
                 .statusCode(200)
-                .body("productIds[0]", is(200));
+                .body("products[0].product", is(200));
 
         verify(customerService, times(1)).agregarProductoACliente(1L, 200L);
     }
@@ -315,7 +326,7 @@ class CustomerControllerTest {
     @Test
     @DisplayName("DELETE /customer/{id}/products/{productId} - Éxito: Desasocia producto")
     public void testRemoverProducto_Exito() {
-        Customer updatedCustomer = new Customer(1L, "Carlos", "Pérez", "carlos@test.com", "123", List.of());
+        Customer updatedCustomer = cliente(1L, "Carlos", "Pérez", "123", List.of());
 
         when(customerService.removerProductoDeCliente(1L, 200L)).thenReturn(updatedCustomer);
 
@@ -326,7 +337,7 @@ class CustomerControllerTest {
                 .delete("/customer/{id}/products/{productId}")
                 .then()
                 .statusCode(200)
-                .body("productIds", empty());
+                .body("products", empty());
 
         verify(customerService, times(1)).removerProductoDeCliente(1L, 200L);
     }
