@@ -16,8 +16,6 @@ import org.digitalthinking.entities.Customer;
 import org.digitalthinking.entities.Product;
 import org.digitalthinking.exceptions.NotFoundException;
 import org.digitalthinking.repositories.CustomerRepository;
-import org.digitalthinking.repositories.CustomerViewRepository;
-import org.digitalthinking.views.CustomerView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,15 +25,12 @@ import java.util.List;
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
-    private final CustomerViewRepository customerViewRepository;
     private final Vertx vertx;
     private WebClient webClient;
 
     @Inject
-    public CustomerService(CustomerRepository customerRepository,
-                           CustomerViewRepository customerViewRepository, Vertx vertx) {
+    public CustomerService(CustomerRepository customerRepository, Vertx vertx) {
         this.customerRepository = customerRepository;
-        this.customerViewRepository = customerViewRepository;
         this.vertx = vertx;
     }
 
@@ -48,15 +43,6 @@ public class CustomerService {
 
     public List<Customer> list() {
         return customerRepository.listAll();
-    }
-
-    public List<CustomerView> listViews() {
-        return customerViewRepository.findAll();
-    }
-
-    public CustomerView getViewById(Long id) {
-        return customerViewRepository.findById(id)
-            .orElseThrow(() -> new NotFoundException("Cliente no encontrado con ID: " + id));
     }
 
     @Transactional

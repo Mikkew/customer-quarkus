@@ -4,8 +4,6 @@ import org.digitalthinking.entities.Customer;
 import org.digitalthinking.entities.Product;
 import org.digitalthinking.exceptions.NotFoundException;
 import org.digitalthinking.repositories.CustomerRepository;
-import org.digitalthinking.repositories.CustomerViewRepository;
-import org.digitalthinking.views.CustomerView;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,9 +25,6 @@ class CustomerServiceTest {
 
     @Mock
     private CustomerRepository customerRepository;
-
-    @Mock
-    private CustomerViewRepository customerViewRepository;
 
     @InjectMocks
     private CustomerService customerService;
@@ -168,31 +163,5 @@ class CustomerServiceTest {
         NotFoundException ex = assertThrows(NotFoundException.class, () -> customerService.delete(99L));
 
         assertTrue(ex.getMessage().contains("99"));
-    }
-
-    @Test
-    @DisplayName("listViews - Delega en el repositorio de views")
-    void testListViews() {
-        CustomerView v = mock(CustomerView.class);
-        when(customerViewRepository.findAll()).thenReturn(List.of(v));
-
-        assertEquals(List.of(v), customerService.listViews());
-    }
-
-    @Test
-    @DisplayName("getViewById - Retorna la view existente")
-    void testGetViewById() {
-        CustomerView v = mock(CustomerView.class);
-        when(customerViewRepository.findById(1L)).thenReturn(Optional.of(v));
-
-        assertSame(v, customerService.getViewById(1L));
-    }
-
-    @Test
-    @DisplayName("getViewById - Lanza NotFoundException si no existe")
-    void testGetViewById_NoExiste() {
-        when(customerViewRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> customerService.getViewById(99L));
     }
 }

@@ -133,4 +133,21 @@ class CustomerResourceTest {
                 .then()
                 .statusCode(404);
     }
+
+    @Test
+    @DisplayName("GET /customer/code/{code} y /search - Consultas vía Spring Data")
+    void testSpringDataQueries() {
+        String code = "CUST-" + java.util.UUID.randomUUID();
+        given().contentType(ContentType.JSON).body(BODY.replace("CUST-X", code))
+                .when().post("/customer").then().statusCode(201);
+
+        given().when().get("/customer/code/" + code)
+                .then().statusCode(200).body("names", is("Luis"));
+        given().queryParam("name", "lui").when().get("/customer/search")
+                .then().statusCode(200).body("size()", greaterThanOrEqualTo(1));
+        given().queryParam("surname", "ruiz").when().get("/customer/search")
+                .then().statusCode(200).body("size()", greaterThanOrEqualTo(1));
+        given().when().get("/customer/code/NOPE")
+                .then().statusCode(404);
+    }
 }

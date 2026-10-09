@@ -4,6 +4,8 @@ import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 import org.digitalthinking.entities.Customer;
 import org.digitalthinking.services.CustomerService;
+import org.digitalthinking.services.CustomerSpringService;
+import org.digitalthinking.services.CustomerViewService;
 import org.digitalthinking.views.CustomerView;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -18,10 +20,15 @@ import java.util.List;
 public class CustomerController {
 
     private final CustomerService customerService;
+    private final CustomerViewService customerViewService;
+    private final CustomerSpringService customerSpringService;
 
     @Inject
-    public CustomerController(CustomerService customerService) {
+    public CustomerController(CustomerService customerService, CustomerViewService customerViewService,
+                              CustomerSpringService customerSpringService) {
         this.customerService = customerService;
+        this.customerViewService = customerViewService;
+        this.customerSpringService = customerSpringService;
     }
 
     @GET
@@ -34,14 +41,31 @@ public class CustomerController {
     @Path("/view")
     @Blocking
     public List<CustomerView> listViews() {
-        return customerService.listViews();
+        return customerViewService.list();
     }
 
     @GET
     @Path("/view/{id}")
     @Blocking
     public CustomerView getViewById(@PathParam("id") Long id) {
-        return customerService.getViewById(id);
+        return customerViewService.getById(id);
+    }
+
+    @GET
+    @Path("/code/{code}")
+    @Blocking
+    public Customer getByCode(@PathParam("code") String code) {
+        return customerSpringService.getByCode(code);
+    }
+
+    @GET
+    @Path("/search")
+    @Blocking
+    public List<Customer> search(@QueryParam("name") String name, @QueryParam("surname") String surname) {
+        if (surname != null) {
+            return customerSpringService.findBySurname(surname);
+        }
+        return customerSpringService.searchByName(name == null ? "" : name);
     }
 
     @GET

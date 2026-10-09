@@ -9,6 +9,8 @@ import org.digitalthinking.entities.Customer;
 import org.digitalthinking.entities.Product;
 import org.digitalthinking.exceptions.NotFoundException;
 import org.digitalthinking.services.CustomerService;
+import org.digitalthinking.services.CustomerSpringService;
+import org.digitalthinking.services.CustomerViewService;
 import org.digitalthinking.views.CustomerView;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,6 +32,12 @@ class CustomerControllerTest {
 
     @InjectMock
     CustomerService customerService;
+
+    @InjectMock
+    CustomerViewService customerViewService;
+
+    @InjectMock
+    CustomerSpringService customerSpringService;
 
     private Customer c1;
     private Customer c2;
@@ -197,7 +205,7 @@ class CustomerControllerTest {
     @DisplayName("GET /customer/view - Retorna lista de views")
     void testListViews() {
         CustomerView v = stubView("CUST-001", "Juan");
-        when(customerService.listViews()).thenReturn(List.of(v));
+        when(customerViewService.list()).thenReturn(List.of(v));
 
         given().when().get("/customer/view")
                 .then()
@@ -210,7 +218,7 @@ class CustomerControllerTest {
     @DisplayName("GET /customer/view/{id} - Retorna la view")
     void testGetViewById() {
         CustomerView v = stubView("CUST-001", "Juan");
-        when(customerService.getViewById(1L)).thenReturn(v);
+        when(customerViewService.getById(1L)).thenReturn(v);
 
         given().when().get("/customer/view/1")
                 .then()
@@ -221,10 +229,53 @@ class CustomerControllerTest {
     @Test
     @DisplayName("GET /customer/view/{id} - 404 si no existe")
     void testGetViewById_NoExiste() {
-        when(customerService.getViewById(99L)).thenThrow(new NotFoundException("no"));
+        when(customerViewService.getById(99L)).thenThrow(new NotFoundException("no"));
 
         given().when().get("/customer/view/99")
                 .then()
                 .statusCode(404);
+    }
+
+    @Test
+    @DisplayName("GET /customer/code/{code} - Retorna cliente")
+    void testGetByCode() {
+        when(customerSpringService.getByCode("CUST-001")).thenReturn(c1);
+
+        given().when().get("/customer/code/CUST-001")
+                .then()
+                .statusCode(200)
+                .body("names", is("Juan"));
+    }
+
+    @Test
+    @DisplayName("GET /customer/code/{code} - 404 si no existe")
+    void testGetByCode_NoExiste() {
+        when(customerSpringService.getByCode("X")).thenThrow(new NotFoundException("no"));
+
+        given().when().get("/customer/code/X")
+                .then()
+                .statusCode(404);
+    }
+
+    @Test
+    @DisplayName("GET /customer/search?name= - Busca por nombre")
+    void testSearchByName() {
+        when(customerSpringService.searchByName("jua")).thenReturn(List.of(c1));
+
+        given().queryParam("name", "jua").when().get("/customer/search")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(1));
+    }
+
+    @Test
+    @DisplayName("GET /customer/search?surname= - Busca por apellido")
+    void testSearchBySurname() {
+        when(customerSpringService.findBySurname("Gómez")).thenReturn(List.of(c2));
+
+        given().queryParam("surname", "Gómez").when().get("/customer/search")
+                .then()
+                .statusCode(200)
+                .body("[0].surname", is("Gómez"));
     }
 }
