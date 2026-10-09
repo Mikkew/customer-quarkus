@@ -7,7 +7,11 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.digitalthinking.entities.Customer;
 import org.digitalthinking.entities.Product;
+import org.digitalthinking.exceptions.NotFoundException;
 import org.digitalthinking.services.CustomerService;
+import org.digitalthinking.services.CustomerSpringService;
+import org.digitalthinking.services.CustomerViewService;
+import org.digitalthinking.views.CustomerView;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,6 +32,12 @@ class CustomerControllerTest {
 
     @InjectMock
     CustomerService customerService;
+
+    @InjectMock
+    CustomerViewService customerViewService;
+
+    @InjectMock
+    CustomerSpringService customerSpringService;
 
     private Customer c1;
     private Customer c2;
@@ -176,5 +186,96 @@ class CustomerControllerTest {
         doThrow(new WebApplicationException("no", Response.Status.NOT_FOUND)).when(customerService).delete(99L);
 
         given().when().delete("/customer/99").then().statusCode(404);
+    }
+
+    private static CustomerView stubView(String code, String names) {
+        return new CustomerView() {
+            public Long getId() { return 1L; }
+            public String getCode() { return code; }
+            public String getAccountNumber() { return null; }
+            public String getNames() { return names; }
+            public String getSurname() { return null; }
+            public String getPhone() { return null; }
+            public String getAddress() { return null; }
+            public java.util.Set<org.digitalthinking.views.ProductView> getProducts() { return java.util.Set.of(); }
+        };
+    }
+
+    @Test
+    @DisplayName("GET /customer/view - Retorna lista de views")
+    void testListViews() {
+        CustomerView v = stubView("CUST-001", "Juan");
+        when(customerViewService.list()).thenReturn(List.of(v));
+
+        given().when().get("/customer/view")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(1))
+                .body("[0].names", is("Juan"));
+    }
+
+    @Test
+    @DisplayName("GET /customer/view/{id} - Retorna la view")
+    void testGetViewById() {
+        CustomerView v = stubView("CUST-001", "Juan");
+        when(customerViewService.getById(1L)).thenReturn(v);
+
+        given().when().get("/customer/view/1")
+                .then()
+                .statusCode(200)
+                .body("code", is("CUST-001"));
+    }
+
+    @Test
+    @DisplayName("GET /customer/view/{id} - 404 si no existe")
+    void testGetViewById_NoExiste() {
+        when(customerViewService.getById(99L)).thenThrow(new NotFoundException("no"));
+
+        given().when().get("/customer/view/99")
+                .then()
+                .statusCode(404);
+    }
+
+    @Test
+    @DisplayName("GET /customer/code/{code} - Retorna cliente")
+    void testGetByCode() {
+        when(customerSpringService.getByCode("CUST-001")).thenReturn(c1);
+
+        given().when().get("/customer/code/CUST-001")
+                .then()
+                .statusCode(200)
+                .body("names", is("Juan"));
+    }
+
+    @Test
+    @DisplayName("GET /customer/code/{code} - 404 si no existe")
+    void testGetByCode_NoExiste() {
+        when(customerSpringService.getByCode("X")).thenThrow(new NotFoundException("no"));
+
+        given().when().get("/customer/code/X")
+                .then()
+                .statusCode(404);
+    }
+
+    @Test
+    @DisplayName("GET /customer/search?name= - Busca por nombre")
+    void testSearchByName() {
+        when(customerSpringService.searchByName("jua")).thenReturn(List.of(c1));
+
+        given().queryParam("name", "jua").when().get("/customer/search")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(1));
+    }
+
+    @Test
+    @DisplayName("GET /customer/search?surname= - Busca por apellido")
+    void testSearchBySurname() {
+        when(customerSpringService.findBySurname("Gómez")).thenReturn(List.of(c2));
+
+        given().queryParam("surname", "Gómez").when().get("/customer/search")
+                .then()
+                .statusCode(200)
+                .body("[0].surname", is("Gómez"));
     }
 }

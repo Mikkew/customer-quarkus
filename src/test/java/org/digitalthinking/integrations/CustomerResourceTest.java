@@ -100,4 +100,54 @@ class CustomerResourceTest {
                 .when().put("/customer/999999").then().statusCode(404);
         given().when().delete("/customer/999999").then().statusCode(404);
     }
+
+    @Test
+    @DisplayName("GET /customer/view/{id} - Proyecta cliente con productos")
+    void testGetView() {
+        int id = create();
+
+        given().when().get("/customer/view/" + id)
+                .then()
+                .statusCode(200)
+                .body("code", is("CUST-X"))
+                .body("names", is("Luis"))
+                .body("products", hasSize(1))
+                .body("products[0].product", is(101));
+    }
+
+    @Test
+    @DisplayName("GET /customer/view - Incluye cliente creado")
+    void testListViews() {
+        create();
+
+        given().when().get("/customer/view")
+                .then()
+                .statusCode(200)
+                .body("size()", greaterThanOrEqualTo(1));
+    }
+
+    @Test
+    @DisplayName("GET /customer/view/{id} - 404 si no existe")
+    void testGetView_NoExiste() {
+        given().when().get("/customer/view/999999")
+                .then()
+                .statusCode(404);
+    }
+
+    @Test
+    @DisplayName("GET /customer/code/{code} y /search - Consultas vía Spring Data")
+    void testSpringDataQueries() {
+        String code = "CUST-" + java.util.UUID.randomUUID();
+        given().contentType(ContentType.JSON).body(BODY.replace("CUST-X", code))
+                .when().post("/customer").then().statusCode(201);
+
+        given().when().get("/customer/code/" + code)
+                .then().statusCode(200).body("names", is("Luis"));
+        given().queryParam("name", "lui").when().get("/customer/search")
+                .then().statusCode(200).body("size()", greaterThanOrEqualTo(1));
+        given().queryParam("surname", "ruiz").when().get("/customer/search")
+                .then().statusCode(200).body("size()", greaterThanOrEqualTo(1));
+        given().when().get("/customer/code/NOPE")
+                .then().statusCode(404);
+    }
 }
