@@ -100,4 +100,37 @@ class CustomerResourceTest {
                 .when().put("/customer/999999").then().statusCode(404);
         given().when().delete("/customer/999999").then().statusCode(404);
     }
+
+    @Test
+    @DisplayName("GET /customer/view/{id} - Proyecta cliente con productos")
+    void testGetView() {
+        int id = create();
+
+        given().when().get("/customer/view/" + id)
+                .then()
+                .statusCode(200)
+                .body("code", is("CUST-X"))
+                .body("names", is("Luis"))
+                .body("products", hasSize(1))
+                .body("products[0].product", is(101));
+    }
+
+    @Test
+    @DisplayName("GET /customer/view - Incluye cliente creado")
+    void testListViews() {
+        create();
+
+        given().when().get("/customer/view")
+                .then()
+                .statusCode(200)
+                .body("size()", greaterThanOrEqualTo(1));
+    }
+
+    @Test
+    @DisplayName("GET /customer/view/{id} - 404 si no existe")
+    void testGetView_NoExiste() {
+        given().when().get("/customer/view/999999")
+                .then()
+                .statusCode(404);
+    }
 }

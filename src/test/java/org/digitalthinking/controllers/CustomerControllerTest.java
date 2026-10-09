@@ -7,7 +7,9 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.digitalthinking.entities.Customer;
 import org.digitalthinking.entities.Product;
+import org.digitalthinking.exceptions.NotFoundException;
 import org.digitalthinking.services.CustomerService;
+import org.digitalthinking.views.CustomerView;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -176,5 +178,53 @@ class CustomerControllerTest {
         doThrow(new WebApplicationException("no", Response.Status.NOT_FOUND)).when(customerService).delete(99L);
 
         given().when().delete("/customer/99").then().statusCode(404);
+    }
+
+    private static CustomerView stubView(String code, String names) {
+        return new CustomerView() {
+            public Long getId() { return 1L; }
+            public String getCode() { return code; }
+            public String getAccountNumber() { return null; }
+            public String getNames() { return names; }
+            public String getSurname() { return null; }
+            public String getPhone() { return null; }
+            public String getAddress() { return null; }
+            public java.util.Set<org.digitalthinking.views.ProductView> getProducts() { return java.util.Set.of(); }
+        };
+    }
+
+    @Test
+    @DisplayName("GET /customer/view - Retorna lista de views")
+    void testListViews() {
+        CustomerView v = stubView("CUST-001", "Juan");
+        when(customerService.listViews()).thenReturn(List.of(v));
+
+        given().when().get("/customer/view")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(1))
+                .body("[0].names", is("Juan"));
+    }
+
+    @Test
+    @DisplayName("GET /customer/view/{id} - Retorna la view")
+    void testGetViewById() {
+        CustomerView v = stubView("CUST-001", "Juan");
+        when(customerService.getViewById(1L)).thenReturn(v);
+
+        given().when().get("/customer/view/1")
+                .then()
+                .statusCode(200)
+                .body("code", is("CUST-001"));
+    }
+
+    @Test
+    @DisplayName("GET /customer/view/{id} - 404 si no existe")
+    void testGetViewById_NoExiste() {
+        when(customerService.getViewById(99L)).thenThrow(new NotFoundException("no"));
+
+        given().when().get("/customer/view/99")
+                .then()
+                .statusCode(404);
     }
 }

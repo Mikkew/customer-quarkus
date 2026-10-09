@@ -4,6 +4,7 @@ import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 import org.digitalthinking.entities.Customer;
 import org.digitalthinking.services.CustomerService;
+import org.digitalthinking.views.CustomerView;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -27,6 +28,20 @@ public class CustomerController {
     @Blocking
     public List<Customer> list() {
         return customerService.list();
+    }
+
+    @GET
+    @Path("/view")
+    @Blocking
+    public List<CustomerView> listViews() {
+        return customerService.listViews();
+    }
+
+    @GET
+    @Path("/view/{id}")
+    @Blocking
+    public CustomerView getViewById(@PathParam("id") Long id) {
+        return customerService.getViewById(id);
     }
 
     @GET
