@@ -1,10 +1,7 @@
 package org.digitalthinking.graphql;
 
-import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.infrastructure.Infrastructure;
 import org.digitalthinking.entities.Customer;
 import org.digitalthinking.services.CustomerService;
-import org.digitalthinking.usecases.CustomerProductsUseCase;
 import org.eclipse.microprofile.graphql.*;
 
 import java.util.List;
@@ -13,12 +10,9 @@ import java.util.List;
 public class CustomerResources {
 
     private CustomerService customerService;
-    private CustomerProductsUseCase customerProductsUseCase;
 
-    public CustomerResources(CustomerService customerService,
-                             CustomerProductsUseCase customerProductsUseCase) {
+    public CustomerResources(CustomerService customerService) {
         this.customerService = customerService;
-        this.customerProductsUseCase = customerProductsUseCase;
     }
 
     @Query("allCustomer")
@@ -39,11 +33,15 @@ public class CustomerResources {
         return customerService.add(customer);
     }
 
-
+    @Mutation
+    public Customer updateCustomer(Customer customer) {
+        return customerService.update(customer.getId(), customer);
+    }
 
     @Mutation
     public Customer deleteCustomer(@Name("customerId") Long id) {
         return customerService.delete(id);
     }
+
 
 }
