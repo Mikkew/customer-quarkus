@@ -6,6 +6,7 @@ import org.digitalthinking.entities.Customer;
 import org.digitalthinking.services.CustomerService;
 import org.digitalthinking.services.CustomerSpringService;
 import org.digitalthinking.services.CustomerViewService;
+import org.digitalthinking.usecases.CustomerProductsUseCase;
 import org.digitalthinking.views.CustomerView;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -22,13 +23,16 @@ public class CustomerController {
     private final CustomerService customerService;
     private final CustomerViewService customerViewService;
     private final CustomerSpringService customerSpringService;
+    private final CustomerProductsUseCase customerProductsUseCase;
 
     @Inject
     public CustomerController(CustomerService customerService, CustomerViewService customerViewService,
-                              CustomerSpringService customerSpringService) {
+                              CustomerSpringService customerSpringService,
+                              CustomerProductsUseCase customerProductsUseCase) {
         this.customerService = customerService;
         this.customerViewService = customerViewService;
         this.customerSpringService = customerSpringService;
+        this.customerProductsUseCase = customerProductsUseCase;
     }
 
     @GET
@@ -101,20 +105,7 @@ public class CustomerController {
     @Path("{id}/product")
     @Blocking
     public Uni<Customer> getByIdProduct(@PathParam("id") Long id) {
-        return Uni.combine()
-                .all()
-                .unis(customerService.getCustomerReactive(id), customerService.getAllProducts())
-                .with((customer, products) -> {
-                    customer.getProducts().forEach(product -> {
-                        products.forEach(p -> {
-                            if (product.getId().equals(p.getId())) {
-                                product.setName(p.getName());
-                                product.setDescription(p.getDescription());
-                            }
-                        });
-                    });
-                    return customer;
-                });
+        return customerProductsUseCase.getByIdWithProducts(id);
     }
 
 }

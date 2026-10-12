@@ -1,22 +1,27 @@
 package org.digitalthinking.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.json.JsonArray;
+import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.digitalthinking.entities.Customer;
 import org.digitalthinking.entities.Product;
 import org.digitalthinking.exceptions.NotFoundException;
 import org.digitalthinking.repositories.CustomerRepository;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,21 +29,28 @@ import java.util.List;
 @ApplicationScoped
 public class CustomerService {
 
+    private static final String PRODUCT_HOST = "localhost";
+    private static final int PRODUCT_PORT = 8081;
+    private static final String PRODUCT_PATH = "/product";
+    private static final Duration PRODUCT_TIMEOUT = Duration.ofSeconds(5);
+
     private final CustomerRepository customerRepository;
     private final Vertx vertx;
+    private final ObjectMapper objectMapper;
     private WebClient webClient;
 
     @Inject
-    public CustomerService(CustomerRepository customerRepository, Vertx vertx) {
+    public CustomerService(CustomerRepository customerRepository, Vertx vertx, ObjectMapper objectMapper) {
         this.customerRepository = customerRepository;
         this.vertx = vertx;
+        this.objectMapper = objectMapper;
     }
 
     @PostConstruct
     private void initialize() {
         this.webClient = WebClient.create(vertx,
-                new WebClientOptions().setDefaultHost("localhost")
-                        .setDefaultPort(8081).setSsl(false).setTrustAll(true));
+                new WebClientOptions().setDefaultHost(PRODUCT_HOST)
+                        .setDefaultPort(PRODUCT_PORT).setSsl(false));
     }
 
     public List<Customer> list() {
@@ -96,11 +108,13 @@ public class CustomerService {
     }
 
     @Transactional
-    public void delete(Long id) {
+    public Customer delete(Long id) {
+        final Customer customer = getById(id);
         boolean eliminado = customerRepository.deleteById(id);
         if (!eliminado) {
             throw new NotFoundException("Cliente no encontrado con ID: " + id);
         }
+        return customer;
     }
 
     public Uni<Customer> getCustomerReactive(Long id) {
@@ -112,30 +126,27 @@ public class CustomerService {
     }
 
     public Uni<List<Product>> getAllProducts() {
-        return webClient.get(8081, "localhost", "/product")
+        return webClient.get(PRODUCT_PATH)
+                .timeout(PRODUCT_TIMEOUT.toMillis())
                 .send()
                 .onFailure()
-                .invoke(res -> log.error("Error recuperando productos ", res))
+                .invoke(ex -> log.error("Error recuperando productos", ex))
                 .onItem()
-                .transform(response -> {
-                    List<Product> lista = new ArrayList<>();
-                    JsonArray objects = response.bodyAsJsonArray();
+                .transform(this::toProducts);
+    }
 
-                    objects.forEach(p -> {
-                        log.info("See Objects: {}", p);
-                        ObjectMapper objectMapper = new ObjectMapper();
-
-                        Product product = null;
-
-                        try {
-                            product = objectMapper.readValue(p.toString(), Product.class);
-                        } catch (JsonProcessingException ex) {
-                            ex.printStackTrace();
-                        }
-
-                        lista.add(product);
-                    });
-                    return lista;
-                });
+    private List<Product> toProducts(HttpResponse<Buffer> response) {
+        if (response.statusCode() != 200) {
+            log.error("Servicio de productos respondio con estado {}", response.statusCode());
+            throw new WebApplicationException("Servicio de productos no disponible", Response.Status.BAD_GATEWAY);
+        }
+        try {
+            return objectMapper.readValue(response.bodyAsString(), new TypeReference<List<Product>>() {
+            });
+        } catch (JsonProcessingException ex) {
+            log.error("Respuesta invalida del servicio de productos", ex);
+            throw new WebApplicationException("Respuesta invalida del servicio de productos", ex,
+                    Response.Status.BAD_GATEWAY);
+        }
     }
 }
