@@ -150,18 +150,48 @@ class CustomerServiceTest {
     @Test
     @DisplayName("delete - Elimina cliente existente")
     void testDelete() {
+        when(customerRepository.findByIdOptional(1L)).thenReturn(Optional.of(base));
         when(customerRepository.deleteById(1L)).thenReturn(true);
 
-        assertDoesNotThrow(() -> customerService.delete(1L));
+        assertSame(base, customerService.delete(1L));
+        verify(customerRepository).deleteById(1L);
     }
 
     @Test
     @DisplayName("delete - 404 si no existe")
     void testDelete_NoExiste() {
-        when(customerRepository.deleteById(99L)).thenReturn(false);
+        when(customerRepository.findByIdOptional(99L)).thenReturn(Optional.empty());
 
         NotFoundException ex = assertThrows(NotFoundException.class, () -> customerService.delete(99L));
 
         assertTrue(ex.getMessage().contains("99"));
+        verify(customerRepository, never()).deleteById(anyLong());
+    }
+
+    @Test
+    @DisplayName("delete - 404 si el repositorio no elimina nada")
+    void testDelete_NoEliminado() {
+        when(customerRepository.findByIdOptional(1L)).thenReturn(Optional.of(base));
+        when(customerRepository.deleteById(1L)).thenReturn(false);
+
+        assertThrows(NotFoundException.class, () -> customerService.delete(1L));
+    }
+
+    @Test
+    @DisplayName("getCustomerReactive - Emite el cliente existente")
+    void testGetCustomerReactive() {
+        when(customerRepository.findByIdOptional(1L)).thenReturn(Optional.of(base));
+
+        Customer res = customerService.getCustomerReactive(1L).await().indefinitely();
+
+        assertSame(base, res);
+    }
+
+    @Test
+    @DisplayName("getCustomerReactive - 404 si no existe")
+    void testGetCustomerReactive_NoExiste() {
+        when(customerRepository.findByIdOptional(99L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> customerService.getCustomerReactive(99L));
     }
 }
