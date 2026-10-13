@@ -142,7 +142,7 @@ class CustomerControllerTest {
     }
 
     @Test
-    @DisplayName("PUT /customer/{id} - Actualiza cliente")
+    @DisplayName("PUT /customer/{id} - 202 con el cliente actualizado")
     void testUpdate() {
         when(customerService.update(eq(1L), any(Customer.class))).thenReturn(c1);
 
@@ -151,7 +151,7 @@ class CustomerControllerTest {
                 .body("{\"code\":\"CUST-001\",\"names\":\"Juan\"}")
                 .when().put("/customer/1")
                 .then()
-                .statusCode(200)
+                .statusCode(202)
                 .body("names", is("Juan"));
 
         verify(customerService).update(eq(1L), any(Customer.class));
@@ -172,11 +172,15 @@ class CustomerControllerTest {
     }
 
     @Test
-    @DisplayName("DELETE /customer/{id} - 204")
+    @DisplayName("DELETE /customer/{id} - 202 con el cliente eliminado")
     void testDelete() {
         when(customerService.delete(1L)).thenReturn(c1);
 
-        given().when().delete("/customer/1").then().statusCode(204);
+        given().when().delete("/customer/1")
+                .then()
+                .statusCode(202)
+                .body("id", is(1))
+                .body("code", is("CUST-001"));
 
         verify(customerService).delete(1L);
     }

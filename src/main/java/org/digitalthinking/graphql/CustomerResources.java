@@ -9,7 +9,7 @@ import java.util.List;
 @GraphQLApi
 public class CustomerResources {
 
-    private CustomerService customerService;
+    private final CustomerService customerService;
 
     public CustomerResources(CustomerService customerService) {
         this.customerService = customerService;
@@ -22,7 +22,7 @@ public class CustomerResources {
     }
 
     @Query
-    @Description("Get a customer form database")
+    @Description("Get a customer from database")
     public Customer getCustomer(@Name("customerId") Long id) {
         return customerService.getById(id);
     }
