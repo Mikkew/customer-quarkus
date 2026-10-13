@@ -2,15 +2,16 @@ package org.digitalthinking.controllers;
 
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
-import org.digitalthinking.entities.Customer;
-import org.digitalthinking.services.CustomerService;
-import org.digitalthinking.services.CustomerSpringService;
-import org.digitalthinking.services.CustomerViewService;
-import org.digitalthinking.views.CustomerView;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
+import org.digitalthinking.entities.Customer;
+import org.digitalthinking.services.CustomerService;
+import org.digitalthinking.services.CustomerSpringService;
+import org.digitalthinking.services.CustomerViewService;
+import org.digitalthinking.usecases.CustomerProductsUseCase;
 
 import java.util.List;
 
@@ -22,13 +23,16 @@ public class CustomerController {
     private final CustomerService customerService;
     private final CustomerViewService customerViewService;
     private final CustomerSpringService customerSpringService;
+    private final CustomerProductsUseCase customerProductsUseCase;
 
     @Inject
     public CustomerController(CustomerService customerService, CustomerViewService customerViewService,
-                              CustomerSpringService customerSpringService) {
+                              CustomerSpringService customerSpringService,
+                              CustomerProductsUseCase customerProductsUseCase) {
         this.customerService = customerService;
         this.customerViewService = customerViewService;
         this.customerSpringService = customerSpringService;
+        this.customerProductsUseCase = customerProductsUseCase;
     }
 
     @GET
@@ -40,81 +44,67 @@ public class CustomerController {
     @GET
     @Path("/view")
     @Blocking
-    public List<CustomerView> listViews() {
-        return customerViewService.list();
+    public Response listViews() {
+        return Response.ok(customerViewService.list()).build();
     }
 
     @GET
     @Path("/view/{id}")
     @Blocking
-    public CustomerView getViewById(@PathParam("id") Long id) {
-        return customerViewService.getById(id);
+    public Response getViewById(@PathParam("id") Long id) {
+        return Response.ok(customerViewService.getById(id)).build();
     }
 
     @GET
     @Path("/code/{code}")
     @Blocking
-    public Customer getByCode(@PathParam("code") String code) {
-        return customerSpringService.getByCode(code);
+    public Response getByCode(@PathParam("code") String code) {
+        return Response.ok(customerSpringService.getByCode(code)).build();
     }
 
     @GET
     @Path("/search")
     @Blocking
-    public List<Customer> search(@QueryParam("name") String name, @QueryParam("surname") String surname) {
+    public Response search(@QueryParam("name") String name, @QueryParam("surname") String surname) {
         if (surname != null) {
-            return customerSpringService.findBySurname(surname);
+            return Response.ok(customerSpringService.findBySurname(surname)).build();
         }
-        return customerSpringService.searchByName(name == null ? "" : name);
+        return Response.ok(customerSpringService.searchByName(name == null ? "" : name)).build();
     }
 
     @GET
     @Path("/{id}")
     @Blocking
-    public Customer getById(@PathParam("id") Long id) {
-        return customerService.getById(id);
+    public Response getById(@PathParam("id") Long id) {
+        return Response.ok(customerService.getById(id)).build();
     }
 
     @POST
     @Blocking
     public Response add(Customer customer) {
         Customer nuevo = customerService.add(customer);
-        return Response.status(Response.Status.CREATED).entity(nuevo).build();
+        return Response.status(Status.CREATED).entity(nuevo).build();
     }
 
     @PUT
     @Path("/{id}")
     @Blocking
-    public Customer update(@PathParam("id") Long id, Customer detalles) {
-        return customerService.update(id, detalles);
+    public Response update(@PathParam("id") Long id, Customer detalles) {
+        return Response.accepted(customerService.update(id, detalles)).build();
     }
 
     @DELETE
     @Path("/{id}")
     @Blocking
     public Response delete(@PathParam("id") Long id) {
-        customerService.delete(id);
-        return Response.noContent().build();
+        return Response.accepted(customerService.delete(id)).build();
     }
 
     @GET
     @Path("{id}/product")
     @Blocking
     public Uni<Customer> getByIdProduct(@PathParam("id") Long id) {
-        return Uni.combine()
-                .all()
-                .unis(customerService.getCustomerReactive(id), customerService.getAllProducts())
-                .with((customer, products) -> {
-                    customer.getProducts().forEach(product -> {
-                        products.forEach(p -> {
-                            if (product.getId().equals(p.getId())) {
-                                product.setName(p.getName());
-                                product.setDescription(p.getDescription());
-                            }
-                        });
-                    });
-                    return customer;
-                });
+        return customerProductsUseCase.getByIdWithProducts(id);
     }
 
 }

@@ -1,0 +1,54 @@
+scalar BigInteger
+
+type Customer {
+  accountNumber: String
+  address: String
+  code: String
+  id: BigInteger
+  names: String
+  phone: String
+  products: [Product]
+  surname: String
+}
+
+type Product {
+  code: String
+  customer: Customer
+  description: String
+  id: BigInteger
+  name: String
+  product: BigInteger
+}
+
+type Query {
+  "Get all customer from a database"
+  allCustomer: [Customer]
+  "Get a customer form database"
+  customer(customerId: BigInteger): Customer
+}
+
+type Mutation {
+  addCustomer(customer: CustomerInput): Customer
+  deleteCustomer(customerId: BigInteger): Customer
+  updateCustomer(customer: CustomerInput): Customer
+}
+
+input CustomerInput {
+  accountNumber: String
+  address: String
+  code: String
+  id: BigInteger
+  names: String
+  phone: String
+  products: [ProductInput]
+  surname: String
+}
+
+input ProductInput {
+  code: String
+  customer: CustomerInput
+  description: String
+  id: BigInteger
+  name: String
+  product: BigInteger
+}

@@ -1,6 +1,7 @@
 package org.digitalthinking.controllers;
 
 import io.quarkus.test.InjectMock;
+import io.smallrye.mutiny.Uni;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import jakarta.ws.rs.WebApplicationException;
@@ -141,7 +142,7 @@ class CustomerControllerTest {
     }
 
     @Test
-    @DisplayName("PUT /customer/{id} - Actualiza cliente")
+    @DisplayName("PUT /customer/{id} - 202 con el cliente actualizado")
     void testUpdate() {
         when(customerService.update(eq(1L), any(Customer.class))).thenReturn(c1);
 
@@ -150,7 +151,7 @@ class CustomerControllerTest {
                 .body("{\"code\":\"CUST-001\",\"names\":\"Juan\"}")
                 .when().put("/customer/1")
                 .then()
-                .statusCode(200)
+                .statusCode(202)
                 .body("names", is("Juan"));
 
         verify(customerService).update(eq(1L), any(Customer.class));
@@ -171,11 +172,15 @@ class CustomerControllerTest {
     }
 
     @Test
-    @DisplayName("DELETE /customer/{id} - 204")
+    @DisplayName("DELETE /customer/{id} - 202 con el cliente eliminado")
     void testDelete() {
-        doNothing().when(customerService).delete(1L);
+        when(customerService.delete(1L)).thenReturn(c1);
 
-        given().when().delete("/customer/1").then().statusCode(204);
+        given().when().delete("/customer/1")
+                .then()
+                .statusCode(202)
+                .body("id", is(1))
+                .body("code", is("CUST-001"));
 
         verify(customerService).delete(1L);
     }
@@ -186,6 +191,31 @@ class CustomerControllerTest {
         doThrow(new WebApplicationException("no", Response.Status.NOT_FOUND)).when(customerService).delete(99L);
 
         given().when().delete("/customer/99").then().statusCode(404);
+    }
+
+    @Test
+    @DisplayName("GET /customer/{id}/product - Completa nombre y descripcion de productos")
+    void testGetByIdProduct() {
+        Product detalle = new Product();
+        detalle.setId(1L);
+        detalle.setName("Cuenta");
+        detalle.setDescription("Cuenta de ahorro");
+        when(customerService.getCustomerReactive(1L)).thenReturn(Uni.createFrom().item(c1));
+        when(customerService.getAllProducts()).thenReturn(Uni.createFrom().item(List.of(detalle)));
+
+        given().when().get("/customer/1/product")
+                .then()
+                .statusCode(200)
+                .body("products[0].name", is("Cuenta"))
+                .body("products[0].description", is("Cuenta de ahorro"));
+    }
+
+    @Test
+    @DisplayName("GET /customer/{id}/product - 404 si el cliente no existe")
+    void testGetByIdProduct_NoExiste() {
+        when(customerService.getCustomerReactive(99L)).thenThrow(new NotFoundException("no existe"));
+
+        given().when().get("/customer/99/product").then().statusCode(404);
     }
 
     private static CustomerView stubView(String code, String names) {
